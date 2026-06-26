@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/building")
-@CrossOrigin(originPatterns = {"http://localhost:*", "http://127.0.0.1:*"})
 @RequiredArgsConstructor
 public class BuildingController {
 

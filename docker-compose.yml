@@ -44,7 +44,7 @@ services:
       context: ../../earthquake-check-frontend
       dockerfile: Dockerfile
       args:
-        - REACT_APP_API_URL=http://localhost:8081
+        - REACT_APP_API_URL=https://api.mehmeterenozden.com
     container_name: earthquakecheck-frontend
     restart: unless-stopped
     depends_on:

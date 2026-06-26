@@ -9,7 +9,6 @@ import com.example.EarthquakeCheck.service.GeoLocationService;
 
 @RestController
 @RequestMapping("/api/test")
-@CrossOrigin(origins="*")//frontend işlemi için
 public class TestController {
 
     @Autowired

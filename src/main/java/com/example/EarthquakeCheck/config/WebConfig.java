@@ -1,16 +1,23 @@
 package com.example.EarthquakeCheck.config;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.*;
-
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
+@RequiredArgsConstructor
 public class WebConfig implements WebMvcConfigurer {
-    
+
+    private final CorsProperties corsProperties;
 
     @Override
-    public void addCorsMappings(CorsRegistry registry){
-        registry.addMapping("/**").allowedOrigins("http://localhost:3000").allowedMethods("GET", "POST", "PUT", "DELETE").allowedHeaders("*");
-
+    public void addCorsMappings(CorsRegistry registry) {
+        String[] origins = corsProperties.getAllowedOrigins().toArray(String[]::new);
+        registry.addMapping("/**")
+                .allowedOrigins(origins)
+                .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+                .allowedHeaders("*")
+                .allowCredentials(corsProperties.isAllowCredentials());
     }
 }
