@@ -14,5 +14,8 @@ import org.springframework.stereotype.Component;
 public class CorsProperties {
 
     private List<String> allowedOrigins = new ArrayList<>();
+    private List<String> allowedHeaders = new ArrayList<>(List.of("Content-Type", "X-Admin-Token", "Accept"));
+    private List<String> exposedHeaders =
+            new ArrayList<>(List.of("X-Rate-Limit-Limit", "X-Rate-Limit-Remaining", "X-Rate-Limit-Reset"));
     private boolean allowCredentials = true;
 }

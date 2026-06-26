@@ -2,7 +2,6 @@ package com.example.EarthquakeCheck.controller;
 
 import com.example.EarthquakeCheck.DTO.ContactRequest;
 import com.example.EarthquakeCheck.DTO.ContactResponse;
-import com.example.EarthquakeCheck.service.AdminAuthorizationService;
 import com.example.EarthquakeCheck.service.ContactMessageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -24,7 +23,6 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -35,9 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Contact", description = "Iletisim mesajlari icin API")
 public class ContactController {
 
-    private static final String ADMIN_TOKEN_HEADER = "X-Admin-Token";
     private final ContactMessageService contactMessageService;
-    private final AdminAuthorizationService adminAuthorizationService;
 
     @PostMapping("/messages")
     @ResponseStatus(HttpStatus.CREATED)
@@ -58,9 +54,7 @@ public class ContactController {
             @ApiResponse(responseCode = "403", description = "Admin yetkisi yok", content = @Content(schema = @Schema(implementation = Map.class)))
     })
     public Page<ContactResponse> listAllMessages(
-            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
-            @RequestHeader(name = ADMIN_TOKEN_HEADER, required = false) String adminToken) {
-        adminAuthorizationService.validateAdminToken(adminToken);
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return contactMessageService.getAllMessages(pageable);
     }
 
@@ -71,10 +65,7 @@ public class ContactController {
             @ApiResponse(responseCode = "403", description = "Admin yetkisi yok", content = @Content(schema = @Schema(implementation = Map.class))),
             @ApiResponse(responseCode = "404", description = "Mesaj bulunamadi", content = @Content(schema = @Schema(implementation = Map.class)))
     })
-    public ContactResponse markMessageAsRead(
-            @PathVariable("id") UUID messageId,
-            @RequestHeader(name = ADMIN_TOKEN_HEADER, required = false) String adminToken) {
-        adminAuthorizationService.validateAdminToken(adminToken);
+    public ContactResponse markMessageAsRead(@PathVariable("id") UUID messageId) {
         return contactMessageService.markAsRead(messageId);
     }
 }

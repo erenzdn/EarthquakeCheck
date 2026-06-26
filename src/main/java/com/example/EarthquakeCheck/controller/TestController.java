@@ -1,12 +1,14 @@
 package com.example.EarthquakeCheck.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.example.EarthquakeCheck.DTO.LocationDTO;
 import com.example.EarthquakeCheck.service.GeoLocationService;
 
+@Profile("dev")
 @RestController
 @RequestMapping("/api/test")
 public class TestController {

@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Size;
 import java.time.Year;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -24,7 +25,10 @@ public class BuildingRequest {
     @Max(value = 150, message = "floorCount 150'den buyuk olamaz.")
     private Integer floorCount;
 
+    @Size(max = 500, message = "address en fazla 500 karakter olabilir.")
     private String address;
+
+    @Size(max = 100, message = "buildingType en fazla 100 karakter olabilir.")
     private String buildingType;
 
     // Koordinat validasyonu production hatalarini azaltir.

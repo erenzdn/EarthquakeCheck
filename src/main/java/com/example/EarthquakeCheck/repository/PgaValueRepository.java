@@ -1,6 +1,7 @@
 package com.example.EarthquakeCheck.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -14,4 +15,8 @@ public interface PgaValueRepository extends JpaRepository<PgaValue, Long> {
     
     @Query(value = "SELECT * FROM pga_value ORDER BY SQRT(POWER(latitude - :latitude, 2) + POWER(longitude - :longitude, 2)) ASC LIMIT 1", nativeQuery = true)
     PgaValue findNearestCoordinate(@Param("latitude") double latitude, @Param("longitude") double longitude);
+
+    @Modifying(clearAutomatically = true)
+    @Query(value = "TRUNCATE TABLE pga_value", nativeQuery = true)
+    void truncateAll();
 } 

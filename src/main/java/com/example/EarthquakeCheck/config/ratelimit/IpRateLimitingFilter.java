@@ -97,6 +97,7 @@ public class IpRateLimitingFilter extends OncePerRequestFilter {
     private Bucket createBucket(RateLimitPolicyResolver.RatePolicy policy) {
         RateLimitProperties.LimitPolicy selected = switch (policy) {
             case STRICT -> properties.getStrict();
+            case IMPORT -> properties.getImportPolicy();
             case CONTACT -> properties.getContact();
             case RELAXED -> properties.getRelaxed();
             case NONE -> properties.getRelaxed();
@@ -110,6 +111,7 @@ public class IpRateLimitingFilter extends OncePerRequestFilter {
     private long getLimitCapacity(RateLimitPolicyResolver.RatePolicy policy) {
         return switch (policy) {
             case STRICT -> properties.getStrict().getCapacity();
+            case IMPORT -> properties.getImportPolicy().getCapacity();
             case CONTACT -> properties.getContact().getCapacity();
             case RELAXED -> properties.getRelaxed().getCapacity();
             case NONE -> properties.getRelaxed().getCapacity();
@@ -124,15 +126,41 @@ public class IpRateLimitingFilter extends OncePerRequestFilter {
     }
 
     private String resolveClientIp(HttpServletRequest request) {
-        if (properties.isTrustForwardedFor()) {
-            String ipHeader = properties.getIpHeader();
-            if (ipHeader != null && !ipHeader.isBlank()) {
-                String forwardedFor = request.getHeader(ipHeader);
-                if (forwardedFor != null && !forwardedFor.isBlank()) {
-                    return forwardedFor.split(",")[0].trim();
-                }
+        String remoteAddr = request.getRemoteAddr();
+
+        if (!properties.isTrustForwardedFor()) {
+            return remoteAddr;
+        }
+
+        if (!TrustedIpMatcher.isTrusted(remoteAddr, properties.getTrustedProxyIps())) {
+            return remoteAddr;
+        }
+
+        for (String headerName : resolveIpHeaders()) {
+            String headerValue = request.getHeader(headerName);
+            if (headerValue == null || headerValue.isBlank()) {
+                continue;
+            }
+
+            String clientIp = headerValue.split(",")[0].trim();
+            if (!clientIp.isBlank()) {
+                return clientIp;
             }
         }
-        return request.getRemoteAddr();
+
+        return remoteAddr;
+    }
+
+    private java.util.List<String> resolveIpHeaders() {
+        if (properties.getIpHeaders() != null && !properties.getIpHeaders().isEmpty()) {
+            return properties.getIpHeaders();
+        }
+
+        String legacyHeader = properties.getIpHeader();
+        if (legacyHeader == null || legacyHeader.isBlank()) {
+            return java.util.List.of("X-Forwarded-For");
+        }
+
+        return java.util.List.of(legacyHeader);
     }
 }

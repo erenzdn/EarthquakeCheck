@@ -29,4 +29,16 @@ class BuildingRequestValidationTest {
         assertTrue(violations.stream().anyMatch(v -> v.getPropertyPath().toString().equals("latitude")));
         assertTrue(violations.stream().anyMatch(v -> v.getPropertyPath().toString().equals("longitude")));
     }
+
+    @Test
+    void shouldRejectOversizedAddressAndBuildingType() {
+        BuildingRequest request = new BuildingRequest(
+                2000, 5, "a".repeat(501), "b".repeat(101), 41.0, 29.0);
+
+        Set<ConstraintViolation<BuildingRequest>> violations = validator.validate(request);
+
+        assertEquals(2, violations.size());
+        assertTrue(violations.stream().anyMatch(v -> v.getPropertyPath().toString().equals("address")));
+        assertTrue(violations.stream().anyMatch(v -> v.getPropertyPath().toString().equals("buildingType")));
+    }
 }

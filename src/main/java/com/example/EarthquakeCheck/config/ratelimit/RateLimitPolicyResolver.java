@@ -15,6 +15,8 @@ public class RateLimitPolicyResolver {
     private static final String STRICT_PATH = "/api/building/evaluate";
     private static final String CONTACT_METHOD = "POST";
     private static final String CONTACT_PATH = "/api/contact/messages";
+    private static final String IMPORT_METHOD = "POST";
+    private static final String IMPORT_PATH = "/api/import/pga";
 
     private final RateLimitProperties properties;
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
@@ -27,6 +29,10 @@ public class RateLimitPolicyResolver {
     public RatePolicy resolve(HttpServletRequest request) {
         if (isStrictEndpoint(request)) {
             return RatePolicy.STRICT;
+        }
+
+        if (isImportEndpoint(request)) {
+            return RatePolicy.IMPORT;
         }
 
         if (isContactEndpoint(request)) {
@@ -44,6 +50,10 @@ public class RateLimitPolicyResolver {
         return matchesPolicyPaths(request, properties.getStrictPaths(), STRICT_METHOD, STRICT_PATH);
     }
 
+    private boolean isImportEndpoint(HttpServletRequest request) {
+        return matchesPolicyPaths(request, properties.getImportPaths(), IMPORT_METHOD, IMPORT_PATH);
+    }
+
     private boolean isContactEndpoint(HttpServletRequest request) {
         return matchesPolicyPaths(request, properties.getContactPaths(), CONTACT_METHOD, CONTACT_PATH);
     }
@@ -56,7 +66,8 @@ public class RateLimitPolicyResolver {
         return path;
     }
 
-    private boolean matchesPolicyPaths(HttpServletRequest request, List<String> configuredPaths, String defaultMethod, String defaultPath) {
+    private boolean matchesPolicyPaths(
+            HttpServletRequest request, List<String> configuredPaths, String defaultMethod, String defaultPath) {
         String method = request.getMethod();
         String path = getNormalizedPath(request);
 
@@ -98,6 +109,7 @@ public class RateLimitPolicyResolver {
 
     public enum RatePolicy {
         STRICT,
+        IMPORT,
         CONTACT,
         RELAXED,
         NONE

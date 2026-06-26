@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.example.EarthquakeCheck.DTO.EvaluationResponseDTO;
 import com.example.EarthquakeCheck.config.ratelimit.RateLimitConfig;
 import com.example.EarthquakeCheck.config.ratelimit.RateLimitPolicyResolver;
+import com.example.EarthquakeCheck.config.security.SecurityConfig;
 import com.example.EarthquakeCheck.service.EvaluationService;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,8 +26,15 @@ import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(controllers = BuildingController.class)
 @AutoConfigureMockMvc(addFilters = true)
-@Import({RateLimitConfig.class, RateLimitPolicyResolver.class})
+@Import({
+        RateLimitConfig.class,
+        RateLimitPolicyResolver.class,
+        SecurityConfig.class,
+        com.example.EarthquakeCheck.config.CorsProperties.class,
+        com.example.EarthquakeCheck.service.impl.AdminAuthorizationServiceImpl.class
+})
 @TestPropertySource(properties = {
+        "app.security.admin-token=test-admin-token",
         "ratelimit.enabled=true",
         "ratelimit.strict.capacity=2",
         "ratelimit.strict.refill=2",

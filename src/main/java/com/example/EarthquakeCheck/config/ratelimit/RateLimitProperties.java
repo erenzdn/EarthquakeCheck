@@ -31,13 +31,20 @@ public class RateLimitProperties {
     @NotNull
     private LimitPolicy contact = new LimitPolicy();
 
+    @Valid
+    @NotNull
+    private LimitPolicy importPolicy = new LimitPolicy();
+
     private List<String> exemptPaths = new ArrayList<>();
     private List<String> relaxedPaths = new ArrayList<>();
     private List<String> strictPaths = new ArrayList<>();
     private List<String> contactPaths = new ArrayList<>();
+    private List<String> importPaths = new ArrayList<>();
 
     private boolean trustForwardedFor = false;
     private String ipHeader = "X-Forwarded-For";
+    private List<String> ipHeaders = new ArrayList<>(List.of("X-Forwarded-For"));
+    private List<String> trustedProxyIps = new ArrayList<>();
     
     private Duration cacheExpiration = Duration.ofMinutes(15);
     private int cacheMaxSize = 100000;

@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.example.EarthquakeCheck.DTO.ContactResponse;
 import com.example.EarthquakeCheck.config.ratelimit.RateLimitConfig;
 import com.example.EarthquakeCheck.config.ratelimit.RateLimitPolicyResolver;
+import com.example.EarthquakeCheck.config.security.SecurityConfig;
 import com.example.EarthquakeCheck.exception.GlobalExceptionHandler;
 import com.example.EarthquakeCheck.model.ContactMessageStatus;
 import com.example.EarthquakeCheck.service.ContactMessageService;
@@ -46,7 +47,10 @@ import org.springframework.test.web.servlet.MockMvc;
         "ratelimit.contact.refill=5",
         "ratelimit.contact.period=1h",
         "ratelimit.exempt-paths=/swagger-ui/**,/v3/api-docs/**",
-        "ratelimit.relaxed-paths=/api/**"
+        "ratelimit.relaxed-paths=/api/**",
+        "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,"
+                + "org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration,"
+                + "org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration"
 })
 class ContactSecurityIntegrationTest {
 
@@ -129,6 +133,7 @@ class ContactSecurityIntegrationTest {
             ContactController.class,
             GlobalExceptionHandler.class,
             AdminAuthorizationServiceImpl.class,
+            SecurityConfig.class,
             RateLimitConfig.class,
             RateLimitPolicyResolver.class
     })
