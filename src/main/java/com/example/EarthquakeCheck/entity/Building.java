@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import java.util.List;
 
-@Entity
+@MappedSuperclass
 @Data
 @Table(name = "building")
 public class Building {

@@ -45,6 +45,9 @@ class BuildingControllerRateLimitTest {
     @MockitoBean
     private EvaluationService evaluationService;
 
+    @MockitoBean
+    private com.example.EarthquakeCheck.service.BuildingManagementService buildingManagementService;
+
     @BeforeEach
     void setUp() {
         when(evaluationService.evaluateBuilding(any()))

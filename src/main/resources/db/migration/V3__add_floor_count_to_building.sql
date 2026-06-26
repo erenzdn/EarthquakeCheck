@@ -1,0 +1,2 @@
+ALTER TABLE building
+    ADD COLUMN IF NOT EXISTS floor_count INTEGER;

@@ -1,15 +1,13 @@
 package com.example.EarthquakeCheck.DTO;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class LocationDTO {
     private double latitude;
     private double longitude;
-    
-    public LocationDTO(double latitude, double longitude) {
-        this.latitude = latitude;
-        this.longitude = longitude;
-    }
-    
 }

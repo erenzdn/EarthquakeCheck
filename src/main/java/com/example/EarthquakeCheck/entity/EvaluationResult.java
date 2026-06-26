@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
 
-@Entity
+@MappedSuperclass
 @Data
 @Table(name = "evaluation_results")
 public class EvaluationResult {

@@ -62,6 +62,7 @@ public class EvaluationServiceImpl implements EvaluationService {
     private Building toBuildingEntity(BuildingRequest request, CoordinateInput coordinateInput) {
         Building building = new Building();
         building.setAddress(request.getAddress());
+        building.setFloorCount(request.getFloorCount());
         building.setBuildingType(request.getBuildingType());
         building.setYearBuilt(request.getYearBuilt());
         building.setLatitude(coordinateInput.latitude());

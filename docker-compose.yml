@@ -39,6 +39,21 @@ services:
     networks:
       - earthquakecheck-net
 
+  frontend:
+    build:
+      context: ../../earthquake-check-frontend
+      dockerfile: Dockerfile
+      args:
+        - REACT_APP_API_URL=http://localhost:8081
+    container_name: earthquakecheck-frontend
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "3000:80"
+    networks:
+      - earthquakecheck-net
+
 volumes:
   postgres_data:
 

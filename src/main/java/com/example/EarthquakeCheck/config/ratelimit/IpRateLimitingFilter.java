@@ -4,24 +4,39 @@ import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.ConsumptionProbe;
 import io.github.bucket4j.Refill;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.Duration;
+import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-@RequiredArgsConstructor
+@Slf4j
 public class IpRateLimitingFilter extends OncePerRequestFilter {
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final RateLimitProperties properties;
     private final RateLimitPolicyResolver policyResolver;
-    private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
+    private final Cache<String, Bucket> buckets;
+
+    public IpRateLimitingFilter(RateLimitProperties properties, RateLimitPolicyResolver policyResolver) {
+        this.properties = properties;
+        this.policyResolver = policyResolver;
+        this.buckets = Caffeine.newBuilder()
+                .expireAfterAccess(properties.getCacheExpiration())
+                .maximumSize(properties.getCacheMaxSize())
+                .build();
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -38,29 +53,67 @@ public class IpRateLimitingFilter extends OncePerRequestFilter {
             return;
         }
 
-        String key = policy.name() + ":" + resolveClientIp(request);
-        Bucket bucket = buckets.computeIfAbsent(key, ignored -> createBucket(policy));
+        String clientIp = resolveClientIp(request);
+        String key = policy.name() + ":" + clientIp;
+        Bucket bucket = buckets.get(key, ignored -> createBucket(policy));
+        if (bucket == null) {
+            bucket = createBucket(policy);
+        }
+
+        long limitCapacity = getLimitCapacity(policy);
         ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
+
         if (probe.isConsumed()) {
+            response.setHeader("X-Rate-Limit-Limit", String.valueOf(limitCapacity));
             response.setHeader("X-Rate-Limit-Remaining", String.valueOf(probe.getRemainingTokens()));
+            response.setHeader("X-Rate-Limit-Reset", "0");
             filterChain.doFilter(request, response);
             return;
         }
 
         long retryAfterSeconds = Math.max(1L, (long) Math.ceil(probe.getNanosToWaitForRefill() / 1_000_000_000d));
+        
+        log.warn("Rate limit exceeded for IP: {} on URI: {} [Policy: {}] - Throttled for {} seconds", 
+                clientIp, request.getRequestURI(), policy, retryAfterSeconds);
+
         response.setStatus(429);
         response.setHeader("Retry-After", String.valueOf(retryAfterSeconds));
+        response.setHeader("X-Rate-Limit-Limit", String.valueOf(limitCapacity));
+        response.setHeader("X-Rate-Limit-Remaining", "0");
+        response.setHeader("X-Rate-Limit-Reset", String.valueOf(retryAfterSeconds));
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.getWriter().write("{\"error\":\"Too many requests. Please try again later.\"}");
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("timestamp", Instant.now().toString());
+        payload.put("status", 429);
+        payload.put("error", "Rate limit exceeded");
+        payload.put("details", "Cok fazla istek gonderdiniz. Lutfen daha sonra tekrar deneyiniz.");
+        payload.put("path", request.getRequestURI());
+        payload.put("retryAfterSeconds", retryAfterSeconds);
+
+        response.getWriter().write(OBJECT_MAPPER.writeValueAsString(payload));
     }
 
     private Bucket createBucket(RateLimitPolicyResolver.RatePolicy policy) {
-        RateLimitProperties.LimitPolicy selected =
-                policy == RateLimitPolicyResolver.RatePolicy.STRICT ? properties.getStrict() : properties.getRelaxed();
+        RateLimitProperties.LimitPolicy selected = switch (policy) {
+            case STRICT -> properties.getStrict();
+            case CONTACT -> properties.getContact();
+            case RELAXED -> properties.getRelaxed();
+            case NONE -> properties.getRelaxed();
+        };
 
         Bandwidth limit = Bandwidth.classic(selected.getCapacity(),
                 Refill.greedy(selected.getRefill(), sanitizeDuration(selected.getPeriod())));
         return Bucket.builder().addLimit(limit).build();
+    }
+
+    private long getLimitCapacity(RateLimitPolicyResolver.RatePolicy policy) {
+        return switch (policy) {
+            case STRICT -> properties.getStrict().getCapacity();
+            case CONTACT -> properties.getContact().getCapacity();
+            case RELAXED -> properties.getRelaxed().getCapacity();
+            case NONE -> properties.getRelaxed().getCapacity();
+        };
     }
 
     private Duration sanitizeDuration(Duration duration) {
@@ -71,9 +124,14 @@ public class IpRateLimitingFilter extends OncePerRequestFilter {
     }
 
     private String resolveClientIp(HttpServletRequest request) {
-        String forwardedFor = request.getHeader("X-Forwarded-For");
-        if (forwardedFor != null && !forwardedFor.isBlank()) {
-            return forwardedFor.split(",")[0].trim();
+        if (properties.isTrustForwardedFor()) {
+            String ipHeader = properties.getIpHeader();
+            if (ipHeader != null && !ipHeader.isBlank()) {
+                String forwardedFor = request.getHeader(ipHeader);
+                if (forwardedFor != null && !forwardedFor.isBlank()) {
+                    return forwardedFor.split(",")[0].trim();
+                }
+            }
         }
         return request.getRemoteAddr();
     }
